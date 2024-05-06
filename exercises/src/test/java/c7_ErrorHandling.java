@@ -118,8 +118,16 @@ public class c7_ErrorHandling extends ErrorHandlingBase {
      */
     @Test
     public void unit_of_work() {
-        Flux<Task> taskFlux = taskQueue().flatMap(task -> task.execute()
-                .then(task.commit()).thenReturn(task).onErrorResume(e-> task.rollback(e).thenReturn(task)));
+//        Flux<Task> taskFlux = taskQueue().flatMap(task -> task.execute()
+//                .then(task.commit()).thenReturn(task).onErrorResume(e-> task.rollback(e).thenReturn(task)));
+
+        Flux<Task> taskFlux = taskQueue()
+                .flatMap(task ->
+                        task.execute()
+                                .then(task.commit())
+                                .onErrorResume(task::rollback)
+                                .thenReturn(task)
+                );
 
         StepVerifier.create(taskFlux)
                     .expectNextMatches(task -> task.executedExceptionally.get() && !task.executedSuccessfully.get())
